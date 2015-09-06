@@ -19,8 +19,7 @@ class MySQLOperationalError(Exception):
 
 class MySQLDBSlave(object):
 
-    def __init__(self, db_name, masters, slaves=None):
-        self.db_name = db_name
+    def __init__(self, masters, slaves=None):
 
         all_masters = list()
         for item in masters:
@@ -37,6 +36,10 @@ class MySQLDBSlave(object):
 
         #: init engine
         self._init_mysql_engine()
+
+    @property
+    def table(self):
+        return self._engine
 
     def _init_mysql_engine(self):
         meta_data = MetaData()
@@ -98,6 +101,9 @@ class MySQLDBSlave(object):
             return _wrap
         return _reconnect
 
+    def execute(self, *multiparams, **params):
+        return self._engine.execute(*multiparams, **params)
+
 
 class _MySQLEngine(object):
     def __init__(self, meta_data):
@@ -105,22 +111,22 @@ class _MySQLEngine(object):
 
     @property
     def client(self):
-        return self.client
+        return self._client
 
     @client.setter
     def client(self, val):
-        self.client = val
+        self._client = val
 
     @property
     def client_type(self):
-        return self.client_type
+        return self._client_type
 
     @client_type.setter
     def client_type(self, val):
-        self.client_type = val
+        self._client_type = val
 
     def execute(self, *multiparams, **params):
-        return self.client.execute(*multiparams, **params)
+        return self._client.execute(*multiparams, **params)
 
     def __getattr__(self, name):
         try:

@@ -22,10 +22,10 @@ class MySQLSelector(object):
         }
 
         for item in masters:
-            self._all_engines[CONST_MASTER_KEY].append({self.get_engine_key(item): item})
+            self._all_engines[CONST_MASTER_KEY][self.get_engine_key(item.url)] = item
 
-        for item in self.slaves:
-            self._all_engines[CONST_SLAVE_KEY].append({self.get_engine_key(item): item})
+        for item in slaves:
+            self._all_engines[CONST_SLAVE_KEY][self.get_engine_key(item.url)] = item
 
     @property
     def all_masters(self):
@@ -51,6 +51,9 @@ class MySQLSelector(object):
         :params type resource: (str/url.URL)
         :return: "{host}:{port}"
         """
+
+        import logging
+        logging.warn(resource)
 
         url_resource = None
         if isinstance(resource, str):
