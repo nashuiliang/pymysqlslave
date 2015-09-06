@@ -21,10 +21,10 @@
 > 
 > 
 > @jianv1.with_random_engine
-> def get_info_by_email(email, **kwargs):
+> def get_info_by_email(email):
 >     _t = jianv1.table.customer_member_t
 >     sql = select([_t], _t.c.email == email)
->     return jianv1.execute(sql, **kwargs).fetchone()
+>     return jianv1.execute(sql).fetchone()
 > 
 > 
 > if __name__ == "__main__":
