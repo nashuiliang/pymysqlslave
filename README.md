@@ -10,7 +10,7 @@
 > logging.basicConfig(level=logging.DEBUG)
 > from sqlalchemy import select
 >
-> from sqlalchemyMySQLDB import MySQLDBSlave
+> from pymysqlslave import MySQLDBSlave
 >
 > jianv1 = MySQLDBSlave(
 >     masters=[
