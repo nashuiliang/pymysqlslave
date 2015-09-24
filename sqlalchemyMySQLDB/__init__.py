@@ -19,7 +19,7 @@ class MySQLOperationalError(Exception):
 
 class MySQLDBSlave(object):
 
-    def __init__(self, masters, slaves=None):
+    def __init__(self, masters, slaves=None, retry_nums=1, is_retry=True):
 
         all_masters = list()
         for item in masters:
@@ -37,6 +37,13 @@ class MySQLDBSlave(object):
         #: init engine
         self._init_mysql_engine()
 
+        self.is_retry = is_retry
+        self.retry_nums = retry_nums
+
+        if self.is_retry and self.retry_nums <= 0:
+            logging.error("retry nums > 0")
+            raise MySQLOperationalError("please modify retry nums")
+
     @property
     def table(self):
         return self._engine
@@ -51,7 +58,10 @@ class MySQLDBSlave(object):
         def _wrap(*args, **kwargs):
             self._engine.client_type = CONST_MASTER_KEY
             self._engine.client = self._selector.get_master_engine()
-            return method(*args, **kwargs)
+
+            if not self.is_retry:
+                return method(*args, **kwargs)
+            return self.with_reconnect(self.retry_nums)(method)(*args, **kwargs)
         return _wrap
 
     def with_slave(self, method):
@@ -59,7 +69,10 @@ class MySQLDBSlave(object):
         def _wrap(*args, **kwargs):
             self._engine.client_type = CONST_SLAVE_KEY
             self._engine.client = self._selector.get_slave_engine()
-            return method(*args, **kwargs)
+
+            if not self.is_retry:
+                return method(*args, **kwargs)
+            return self.with_reconnect(self.retry_nums)(method)(*args, **kwargs)
         return _wrap
 
     def with_random_engine(self, method):
@@ -67,7 +80,10 @@ class MySQLDBSlave(object):
         def _wrap(*args, **kwargs):
             self._engine.client_type = CONST_ALL_KEY
             self._engine.client = self._selector.get_random_engine()
-            return method(*args, **kwargs)
+
+            if not self.is_retry:
+                return method(*args, **kwargs)
+            return self.with_reconnect(self.retry_nums)(method)(self, *args, **kwargs)
         return _wrap
 
     def with_reconnect(self, retry=1):
@@ -75,7 +91,7 @@ class MySQLDBSlave(object):
         def _reconnect(method):
             @functools.wraps(method)
             def _wrap(self, *args, **kwargs):
-                _f = lambda: method(self, *args, **kwargs)
+                _f = lambda: method(*args, **kwargs)
 
                 for i in xrange(retry + 1):
                     try:
@@ -86,7 +102,7 @@ class MySQLDBSlave(object):
                         f_module = self.__class__.__module__
                         f_class = self.__class__.__name__
                         f_val = "{}:{}:{}".format(f_module, f_class, f_name)
-                        logging.info(("mysqldb_reconnect:{}".format(f_val), u"mysqldb reconnect", e))
+                        logging.info(("Retry:{} mysqldb_reconnect:{}".format(i + 1, f_val), u"mysqldb reconnect", e))
 
                         # reconnect mysqldb
                         engine = self._engine.client

@@ -12,7 +12,7 @@ jianv1 = MySQLDBSlave(
         "mysql+mysqldb://jianxun:jianxun@jianxun.dev:3306/jianxunv2?charset=utf8",
     ],
     slaves=[
-    ])
+    ], is_retry=False)
 
 
 @jianv1.with_random_engine
