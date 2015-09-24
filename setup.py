@@ -31,15 +31,11 @@ install_requires = [
     'sqlalchemy',
 ]
 
-lint_requires = [
-    'pep8',
-]
-
 # tests_require = ['mock', 'nose', 'unittest2', 'python-snappy']
 dependency_links = []
 
 setup(
-    name='pymysqlsalve',
+    name='pymysqlslave',
     version=get_version(),
     author='chuangwang',
     author_email='nashuiliang@gmail.com',
@@ -49,7 +45,6 @@ setup(
     license='Apache License 2.0',
     packages=find_packages(),
     install_requires=install_requires,
-    setup_requires=setup_requires,
     dependency_links=dependency_links,
     zip_safe=False,
     include_package_data=True,
