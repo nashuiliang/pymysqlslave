@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # coding=utf-8
 
+__version__ = '1.0.1'
+
 import functools
 import logging
 import traceback
@@ -11,6 +13,11 @@ from sqlalchemy import MetaData
 from sqlalchemy.exc import OperationalError
 
 from .dbutils import MySQLSelector, CONST_MASTER_KEY, CONST_SLAVE_KEY, CONST_ALL_KEY
+
+
+__all__ = [
+    "MySQLOperationalError", "MySQLDBSlave"
+]
 
 
 class MySQLOperationalError(Exception):
