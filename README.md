@@ -1,5 +1,8 @@
 # SQLAlchemy Simple Master Slave Load Balancing(***beta***)
 
+### Project pypi
+[https://pypi.python.org/pypi/pymysqlslave](https://pypi.python.org/pypi/pymysqlslave)
+
 ### Version update
 
 - 1.0.1 initialize project
