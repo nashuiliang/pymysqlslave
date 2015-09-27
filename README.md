@@ -1,7 +1,12 @@
 # SQLAlchemy Simple Master Slave Load Balancing(***beta***)
 
+### Version update
 
-> DEMO
+- 1.0.1 initialize project
+- 1.0.3 add is_auto_allocation(Automatic Identification master and slave)
+
+
+### DEMO
 
 ```python
 #!/usr/bin/env python
@@ -48,5 +53,6 @@ if __name__ == "__main__":
 
 
 ## TODO
-－ add retry connecting(bug: interactive_timeout)
-－ add is_auto_allocation(Automatic Identification master and slave)
+
+- add retry connecting(bug: interactive_timeout)
+- add is_auto_allocation(Automatic Identification master and slave)
