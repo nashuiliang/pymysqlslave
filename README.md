@@ -59,3 +59,4 @@ if __name__ == "__main__":
 
 - add retry connecting(bug: interactive_timeout)
 - add is_auto_allocation(Automatic Identification master and slave)
+- Thread Safety
