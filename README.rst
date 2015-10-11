@@ -3,16 +3,17 @@ Pymysqlslave
 
 SQLAlchemy Simple Master Slave Load Balancing(***beta***)
 
-You can install PyKafka from PyPI with
+You can install Pymysqlslave from PyPI with
 
 .. sourcecode:: bash
 
-    $ pip install pykafka
+    $ pip install pymysqlslave
 
 
 Version update
 --------------
 
+- 1.0.5 [BUG]MySQLDBSlave slaves unavailable. modify MySQLDBSlave reconnect_retry_nums default => 3
 - 1.0.3 add is_auto_allocation(Automatic Identification master and slave)
 - 1.0.1 initialize project
 
@@ -39,9 +40,14 @@ Getting Started
                 "pool_size": 5,
                 "pool_recycle": 1,
             }
-
         ],
         slaves=[
+            {
+                "name": "mysql+mysqldb://jianxun:jianxun@jianxunv2.dev:3306/jianxunv2?charset=utf8",
+                "echo": False,
+                "pool_size": 5,
+                "pool_recycle": 1,
+            }
         ],
         is_auto_allocation=True)
 
@@ -60,7 +66,7 @@ Getting Started
 
     if __name__ == "__main__":
         result = get_info_by_email("592030542@qq.com")
-        logging.warn(result)
+        logging.info(result)
         update_info_by_email("592030542@qq.com")
 
 
