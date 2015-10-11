@@ -14,10 +14,6 @@ from sqlalchemy.exc import OperationalError
 
 #: logging handler
 _logger = logging.getLogger("pymysqlslave")
-_log_handler = logging.StreamHandler()
-_log_formatter = logging.Formatter("[%(levelname)s][%(asctime)s]: %(message)s")
-_log_handler.setFormatter(_log_formatter)
-_logger.addHandler(_log_handler)
 
 from .dbutils import MySQLSelector, CONST_MASTER_KEY, CONST_SLAVE_KEY, CONST_ALL_KEY, MASTER_HANDLERS
 
@@ -33,12 +29,12 @@ class MySQLOperationalError(Exception):
 
 class MySQLDBSlave(object):
 
-    def __init__(self, masters, slaves=None, is_auto_allocation=False, reconnect_retry_nums=1, is_reconnect=True):
+    def __init__(self, masters, slaves=None, is_auto_allocation=False, reconnect_retry_nums=3, is_reconnect=True):
         """ init mysqldb slave
         :param list masters:
                 mysql masters `sqlalchemy.create_engine(*args, **kwargs)` list,
                 create a new :class:`.Engine` instance.
-        :param list slave:
+        :param list slaves:
                 mysql slaves `sqlalchemy.create_engine(*args, **kwargs)` list,
                 create a new :class:`.Engine` instance.
         :param bool is_reconnect:
@@ -61,7 +57,7 @@ class MySQLDBSlave(object):
         for item in slaves:
             name = item["name"]
             item.pop("name", None)
-            all_slaves.append(create_engine(**item))
+            all_slaves.append(create_engine(name, **item))
 
         if all([all_masters, all_slaves]):
             _logger.debug("mysqldb clients contain masters and slaves")
@@ -71,7 +67,7 @@ class MySQLDBSlave(object):
             _logger.debug("mysqldb clients include only slaves")
         else:
             raise MySQLOperationalError("`MySQLDBSlave` instantiation"
-                                        "requires parameters masters or slaves value is not empty")
+                                        "requires parameters masters or slaves values are not empty")
 
         if is_auto_allocation and not all_masters:
             raise MySQLOperationalError("`is_auto_allocation` should contain master clients")
