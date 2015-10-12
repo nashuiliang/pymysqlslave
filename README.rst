@@ -13,6 +13,7 @@ You can install Pymysqlslave from PyPI with
 Version update
 --------------
 
+- 1.0.6 [BUG]MySQLDBSlave open retry not avaliable
 - 1.0.5 [BUG]MySQLDBSlave slaves unavailable. modify MySQLDBSlave reconnect_retry_nums default => 3
 - 1.0.3 add is_auto_allocation(Automatic Identification master and slave)
 - 1.0.1 initialize project
