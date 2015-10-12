@@ -24,7 +24,22 @@ jianv1 = MySQLDBSlave(
 
 def get_info_by_email(email):
     _t = jianv1.table.customer_member_t
-    sql = select([_t]).where(_t.c.email == email)
+    sql = select([_t.c.member_id]).where(_t.c.email == email)
+    return jianv1.execute(sql).fetchone()
+
+
+@jianv1.with_random_engine
+def get_info_by_email_1(email):
+    _t = jianv1.table.customer_member_t
+    sql = select([_t.c.member_id]).where(_t.c.email == email)
+    return jianv1.execute(sql).fetchone()
+
+
+@jianv1.with_random_engine
+@jianv1.with_reconnect(retry=3)
+def get_info_by_email_2(email):
+    _t = jianv1.table.customer_member_t
+    sql = select([_t.c.member_id]).where(_t.c.email == email)
     return jianv1.execute(sql).fetchone()
 
 
@@ -37,4 +52,7 @@ def update_info_by_email(email):
 if __name__ == "__main__":
     result = get_info_by_email("592030542@qq.com")
     logging.warn(result)
-    update_info_by_email("592030542@qq.com")
+    result = get_info_by_email_1("592030542@qq.com")
+    logging.warn(result)
+    result = get_info_by_email_2("592030542@qq.com")
+    logging.warn(result)

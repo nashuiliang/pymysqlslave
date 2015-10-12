@@ -96,47 +96,52 @@ class MySQLDBSlave(object):
         self._engine = _MySQLEngine(meta_data)
 
     def _reset_engine(self):
-        self._engine.client_type = None
-        self._engine.client = None
+        self._engine.mysql_client = None
+        self._engine.mysql_client_type = None
+        self._engine.mysql_reconnect_open_retry = False
 
     def with_master(self, method):
         @functools.wraps(method)
         def _wrap(*args, **kwargs):
-            self._engine.client_type = CONST_MASTER_KEY
-            self._engine.client = self._selector.get_master_engine()
+            self._engine.mysql_client = self._selector.get_master_engine()
+            self._engine.mysql_client_type = CONST_MASTER_KEY
 
-            if not self.is_reconnect:
+            if not self.is_reconnect or self._engine.mysql_reconnect_open_retry:
                 return method(*args, **kwargs)
-            return self.with_reconnect(self.retry_nums)(method)(*args, **kwargs)
+            return self.with_reconnect(self.reconnect_retry_nums)(method)(*args, **kwargs)
         return _wrap
 
     def with_slave(self, method):
         @functools.wraps(method)
         def _wrap(*args, **kwargs):
-            self._engine.client_type = CONST_SLAVE_KEY
-            self._engine.client = self._selector.get_slave_engine()
+            self._engine.mysql_client = self._selector.get_slave_engine()
+            self._engine.mysql_client_type = CONST_SLAVE_KEY
 
-            if not self.is_reconnect:
+            if not self.is_reconnect or self._engine.mysql_reconnect_open_retry:
                 return method(*args, **kwargs)
-            return self.with_reconnect(self.retry_nums)(method)(*args, **kwargs)
+            return self.with_reconnect(self.reconnect_retry_nums)(method)(*args, **kwargs)
         return _wrap
 
     def with_random_engine(self, method):
         @functools.wraps(method)
         def _wrap(*args, **kwargs):
-            self._engine.client_type = CONST_ALL_KEY
-            self._engine.client = self._selector.get_random_engine()
+            self._engine.mysql_client = self._selector.get_random_engine()
+            self._engine.mysql_client_type = CONST_ALL_KEY
 
-            if not self.is_reconnect:
+            if not self.is_reconnect or self._engine.mysql_reconnect_open_retry:
                 return method(*args, **kwargs)
-            return self.with_reconnect(self.retry_nums)(method)(*args, **kwargs)
+            return self.with_reconnect(self.reconnect_retry_nums)(method)(*args, **kwargs)
         return _wrap
 
-    def with_reconnect(self, retry=1):
+    def with_reconnect(self, retry=3):
 
         def _reconnect(method):
             @functools.wraps(method)
-            def _wrap(self, *args, **kwargs):
+            def _wrap(*args, **kwargs):
+
+                #: open retry
+                self._engine.mysql_reconnect_open_retry = True
+
                 _f = lambda: method(*args, **kwargs)
 
                 for i in xrange(retry + 1):
@@ -151,9 +156,9 @@ class MySQLDBSlave(object):
                         _logger.debug(("Retry:{} with_reconnect:{}".format(i + 1, f_val), u"mysqldb reconnect", e))
 
                         # reconnect mysqldb
-                        engine = self._engine.client
+                        engine = self._engine.mysql_client
                         engine.connect()
-                        self._selector.update(self._engine.client_type, engine)
+                        self._selector.update(self._engine.mysql_client_type, engine)
                         continue
 
                 _logger.error(traceback.format_exc())
@@ -164,26 +169,39 @@ class MySQLDBSlave(object):
 
     def execute(self, statement, *multiparams, **params):
         #: is open auth_allocation and not set engine client(with_master, with_slave, with_random_engine)
-        if self.is_auto_allocation and not self._engine.client:
-            raw_statement = str(statement)
-            if not raw_statement:
-                raise MySQLOperationalError("statement not empty")
+        if self.is_auto_allocation and not self._engine.mysql_client:
+            self._allocate_engine_by_statement(statement)
 
-            statement_handler = raw_statement[:6].split(" ")[0]
+        #: not open retry
+        if self.is_reconnect and not self._engine.mysql_reconnect_open_retry:
+            return self.with_reconnect(self.reconnect_retry_nums)(self._execute)(statement, *multiparams, **params)
 
-            #: insert, create, update
-            if statement_handler in MASTER_HANDLERS:
-                self._engine.client_type = CONST_MASTER_KEY
-                self._engine.client = self._selector.get_master_engine()
-            else:
-                self._engine.client_type = CONST_ALL_KEY
-                self._engine.client = self._selector.get_random_engine()
+        #: open retry
+        return self._execute(statement, *multiparams, **params)
 
-            _logger.debug("Statement Handler TYPE: {}".format(self._engine.client_type))
+    def _allocate_engine_by_statement(self, statement):
+        raw_statement = str(statement)
+        if not raw_statement:
+            raise MySQLOperationalError("statement not empty")
 
+        statement_handler = raw_statement[:6].split(" ")[0]
+
+        #: insert, create, update
+        if statement_handler in MASTER_HANDLERS:
+            self._engine.mysql_client = self._selector.get_master_engine()
+            self._engine.mysql_client_type = CONST_MASTER_KEY
+        else:
+            self._engine.mysql_client = self._selector.get_random_engine()
+            self._engine.mysql_client_type = CONST_ALL_KEY
+
+        _logger.debug("Statement Handler TYPE: {}".format(self._engine.mysql_client_type))
+
+    def _execute(self, statement, *multiparams, **params):
         #: execute
-        assert self._engine.client
+        assert self._engine.mysql_client
         result = self._engine.execute(statement, *multiparams, **params)
+
+        #: reset engine
         self._reset_engine()
         return result
 
@@ -193,22 +211,31 @@ class _MySQLEngine(object):
         self._meta_data = meta_data
         self._client = None
         self._client_type = None
+        self._reconnect_open_retry = False
 
     @property
-    def client(self):
+    def mysql_client(self):
         return self._client
 
-    @client.setter
-    def client(self, val):
+    @mysql_client.setter
+    def mysql_client(self, val):
         self._client = val
 
     @property
-    def client_type(self):
+    def mysql_client_type(self):
         return self._client_type
 
-    @client_type.setter
-    def client_type(self, val):
+    @mysql_client_type.setter
+    def mysql_client_type(self, val):
         self._client_type = val
+
+    @property
+    def mysql_reconnect_open_retry(self):
+        return self._reconnect_open_retry
+
+    @mysql_reconnect_open_retry.setter
+    def mysql_reconnect_open_retry(self, val):
+        self._reconnect_open_retry = val
 
     def execute(self, statement, *multiparams, **params):
         return self._client.execute(statement, *multiparams, **params)
