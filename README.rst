@@ -74,6 +74,7 @@ Getting Started
 TODO
 ----
 
+- 根据不同的环境，用户选择不同的slave
 - add retry connecting(bug: interactive_timeout)
 - add is_auto_allocation(Automatic Identification master and slave)
 - Thread Safety
