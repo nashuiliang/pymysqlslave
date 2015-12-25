@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-__version__ = '1.0.6'
+__version__ = '1.0.7'
 
 import functools
 import logging
@@ -184,7 +184,11 @@ class MySQLDBSlave(object):
         if not raw_statement:
             raise MySQLOperationalError("statement not empty")
 
-        statement_handler = raw_statement[:6].split(" ")[0]
+        raw_statement = raw_statement.strip()
+        if not raw_statement:
+            raise MySQLOperationalError("statement not empty")
+
+        statement_handler = raw_statement[:6].split(" ")[0].upper()
 
         #: insert, create, update
         if statement_handler in MASTER_HANDLERS:
